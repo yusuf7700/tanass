@@ -42,7 +42,7 @@
       card.href = `read.html?id=${encodeURIComponent(t.id)}`;
       card.className = 'text-card';
 
-      const pct = t.progress || 0;
+      const pct = Math.max(t.progress || 0, getProgress(t.id));
       const ringClass = pct >= 100 ? 'progress-ring done' : 'progress-ring';
 
       card.innerHTML = `

@@ -40,7 +40,12 @@
 
   function setMode(next) {
     mode = next;
-    if (mode === 'practice') pointer = 0;
+    if (mode === 'practice') {
+      pointer = 0;
+      revealedCount = 0;
+      pendingIndex = null;
+      clearTimeout(pendingTimer);
+    }
     renderWords();
     visLabel.textContent = mode === 'visible' ? 'Berkitish' : "Ko'rsatish";
   }
@@ -62,7 +67,12 @@
       span.classList.remove('hidden');
       span.classList.add('revealed');
     }
+    revealedCount++;
+    if (window.setProgress && item.id) {
+      setProgress(item.id, Math.round((revealedCount / expectedWords.length) * 100));
+    }
   }
+  let revealedCount = 0;
 
   // ---------- xato signal (bir soniyalik "wrong" tovushi + so'zni qizil ko'rsatish) ----------
   let audioCtx;
@@ -124,14 +134,41 @@
     return dp[m][n];
   }
 
-  // To'liq bir xil bo'lmasa ham, yaqin talaffuz/tanish xatosi bo'lsa qabul qilinadi.
+  // To'liq bir xil bo'lmasa ham, yaqin talaffuz/tanish xatosi bo'lsa qabul qilinadi
+  // (lekin oldingidan biroz qattiqroq — tasodifiy noto'g'ri so'zlar o'tib ketmasin uchun).
   function isSimilar(a, b) {
     if (!a || !b) return false;
     if (a === b) return true;
     if (a.length >= 3 && b.length >= 3 && (a.includes(b) || b.includes(a))) return true;
     const dist = levenshtein(a, b);
     const maxLen = Math.max(a.length, b.length);
-    return dist / maxLen <= 0.34; // ~65%+ moslik
+    return dist / maxLen <= 0.25; // ~75%+ moslik
+  }
+
+  // ---------- tasdiqlash bilan ochish ----------
+  // So'z darhol ochilmaydi: keyingi so'z aytilganda (tasdiqlangach) yoki
+  // ~3 soniya jim turilsa avtomatik ochiladi. Shu bilan tasodifiy/chala
+  // tanilgan so'zlar darhol ekranga chiqib ketmaydi.
+  const CONFIRM_DELAY_MS = 3000;
+  let pendingIndex = null;
+  let pendingTimer = null;
+
+  function commitPending() {
+    if (pendingIndex === null) return;
+    clearTimeout(pendingTimer);
+    revealWord(pendingIndex);
+    pendingIndex = null;
+    if (pointer >= expectedWords.length) {
+      stopListening();
+      statusEl.textContent = 'Tabriklaymiz, tugatdingiz! 🎉';
+    }
+  }
+
+  function matchWord(i) {
+    if (pendingIndex !== null) commitPending(); // keyingi so'z tasdiqladi
+    pendingIndex = i;
+    clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(commitPending, CONFIRM_DELAY_MS);
   }
 
   function tryAdvance(transcriptWords) {
@@ -142,17 +179,13 @@
       const w = normalize(transcriptWords[ti]);
       if (w.length >= 1) hadRealWord = true;
       if (w && isSimilar(w, normalize(expectedWords[pointer]))) {
-        revealWord(pointer);
+        matchWord(pointer);
         pointer++;
       }
       ti++;
     }
     if (pointer === startPointer && hadRealWord) {
       flashWrong();
-    }
-    if (pointer >= expectedWords.length) {
-      stopListening();
-      statusEl.textContent = 'Tabriklaymiz, tugatdingiz! 🎉';
     }
   }
 
@@ -283,6 +316,7 @@
     listening = false;
     micBtn.classList.remove('listening');
     statusEl.textContent = 'Boshlash uchun mikrofonni bosing';
+    clearTimeout(pendingTimer);
     if (recognition) {
       try { recognition.stop(); } catch (e) { /* noop */ }
     }

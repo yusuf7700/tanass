@@ -1,13 +1,15 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v2';
+const CACHE_VERSION = 'tanass-v3';
 
 const CORE_ASSETS = [
   '/index.html',
   '/read.html',
+  '/progress.html',
   '/css/style.css',
   '/js/app.js',
   '/js/reader.js',
   '/js/data.js',
+  '/js/progress-store.js',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
