@@ -273,11 +273,20 @@
     statusEl.textContent = "Bu brauzerda ovoz tanish qo'llanmaydi (Chrome'dan foydalaning)";
     micBtn.disabled = true;
     micBtn.style.opacity = 0.4;
+    document.getElementById('langSelect').style.display = 'none';
   } else {
     recognition = new SpeechRecognition();
-    recognition.lang = 'ar-SA';
+    recognition.lang = localStorage.getItem('tanass_lang') || 'ar-SA';
     recognition.continuous = true;
     recognition.interimResults = true;
+
+    const langSelect = document.getElementById('langSelect');
+    langSelect.value = recognition.lang;
+    langSelect.addEventListener('change', () => {
+      recognition.lang = langSelect.value;
+      localStorage.setItem('tanass_lang', langSelect.value);
+      if (listening) { stopListening(); startListening(); }
+    });
 
     recognition.onresult = (event) => {
       let finalChunk = '';

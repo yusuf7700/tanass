@@ -368,6 +368,17 @@ img { max-width: 100%; display: block; }
   z-index: 30;
   pointer-events: none;
 }
+.mic-dock .lang-select {
+  pointer-events: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-card);
+}
 .mic-dock .status {
   font-size: 13px;
   font-weight: 600;
