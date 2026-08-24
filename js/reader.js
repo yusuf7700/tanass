@@ -316,6 +316,7 @@
 
   function startListening() {
     if (!recognition || listening) return;
+    if (!audio.paused) { audio.pause(); playBtn.innerHTML = playIcon(); } // ovoz mikrofonga xalaqit bermasin
     if (mode !== 'practice' || pointer >= expectedWords.length) setMode('practice');
     listening = true;
     micBtn.classList.add('listening');
