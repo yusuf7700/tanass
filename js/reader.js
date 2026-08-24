@@ -20,14 +20,41 @@
   // ---------- text rendering ----------
   const expectedWords = splitIntoWords(item.text);
   const textEl = document.getElementById('arabicText');
+  const visBtn = document.getElementById('visibilityBtn');
+  const visLabel = document.getElementById('visibilityLabel');
+
   let pointer = 0;
+  let mode = 'visible'; // 'visible' -> o'qish uchun ochiq, 'practice' -> yodlash uchun berkitilgan
 
   function renderWords() {
     textEl.innerHTML = expectedWords
-      .map((w, i) => `<span class="word ${i < pointer ? 'revealed' : 'hidden'}" data-i="${i}">${w}</span>`)
+      .map((w, i) => {
+        let cls = 'word';
+        if (mode === 'practice') cls += i < pointer ? ' revealed' : ' hidden';
+        else cls += ' revealed';
+        return `<span class="${cls}" data-i="${i}">${w}</span>`;
+      })
       .join(' ');
   }
   renderWords();
+
+  function setMode(next) {
+    mode = next;
+    if (mode === 'practice') pointer = 0;
+    renderWords();
+    visLabel.textContent = mode === 'visible' ? 'Berkitish' : "Ko'rsatish";
+  }
+
+  visBtn.addEventListener('click', () => {
+    setMode(mode === 'visible' ? 'practice' : 'visible');
+    if (mode === 'visible') stopListening();
+  });
+
+  document.getElementById('restartBtn').addEventListener('click', () => {
+    stopListening();
+    setMode('practice');
+    statusEl.textContent = 'Boshlash uchun mikrofonni bosing';
+  });
 
   function revealWord(i) {
     const span = textEl.querySelector(`.word[data-i="${i}"]`);
@@ -37,12 +64,39 @@
     }
   }
 
-  function resetReveal() {
-    pointer = 0;
-    renderWords();
+  // ---------- xato signal (bir soniyalik "wrong" tovushi + so'zni qizil ko'rsatish) ----------
+  let audioCtx;
+  function beepWrong() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 220;
+      g.gain.value = 0.16;
+      o.connect(g);
+      g.connect(audioCtx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+      o.stop(audioCtx.currentTime + 0.3);
+    } catch (e) { /* audio context mavjud emas */ }
   }
 
-  // ---------- Arabic normalization for matching ----------
+  function flashWrong() {
+    if (pointer >= expectedWords.length) return;
+    beepWrong();
+    const span = textEl.querySelector(`.word[data-i="${pointer}"]`);
+    if (span) {
+      span.classList.remove('hidden');
+      span.classList.add('wrong');
+      setTimeout(() => {
+        span.classList.remove('wrong');
+        if (mode === 'practice') span.classList.add('hidden');
+      }, 550);
+    }
+  }
+
+  // ---------- Arabic normalization + moslik (fuzzy) ----------
   function normalize(word) {
     return word
       .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '') // harakat / tashkeel
@@ -50,33 +104,70 @@
       .replace(/[إأآٱ]/g, 'ا')
       .replace(/ى/g, 'ي')
       .replace(/ة/g, 'ه')
-      .replace(/[^\u0621-\u064A]/g, '') // strip punctuation etc.
+      .replace(/[^\u0621-\u064A]/g, '')
       .trim();
   }
 
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
+
+  // To'liq bir xil bo'lmasa ham, yaqin talaffuz/tanish xatosi bo'lsa qabul qilinadi.
+  function isSimilar(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    if (a.length >= 3 && b.length >= 3 && (a.includes(b) || b.includes(a))) return true;
+    const dist = levenshtein(a, b);
+    const maxLen = Math.max(a.length, b.length);
+    return dist / maxLen <= 0.34; // ~65%+ moslik
+  }
+
   function tryAdvance(transcriptWords) {
+    const startPointer = pointer;
     let ti = 0;
+    let hadRealWord = false;
     while (ti < transcriptWords.length && pointer < expectedWords.length) {
-      if (normalize(transcriptWords[ti]) === normalize(expectedWords[pointer])) {
+      const w = normalize(transcriptWords[ti]);
+      if (w.length >= 1) hadRealWord = true;
+      if (w && isSimilar(w, normalize(expectedWords[pointer]))) {
         revealWord(pointer);
         pointer++;
       }
       ti++;
     }
+    if (pointer === startPointer && hadRealWord) {
+      flashWrong();
+    }
     if (pointer >= expectedWords.length) {
       stopListening();
-      statusEl.textContent = "Tabriklaymiz, tugatdingiz! 🎉";
+      statusEl.textContent = 'Tabriklaymiz, tugatdingiz! 🎉';
     }
   }
 
   // ---------- audio player ----------
-  const audio = new Audio(item.audioUrl || '');
+  const audio = new Audio();
+  audio.preload = 'none';
   const playBtn = document.getElementById('playBtn');
   const speedSelect = document.getElementById('speedSelect');
   const scrubFill = document.getElementById('scrubFill');
   const scrub = document.getElementById('scrub');
   const rewindBtn = document.getElementById('rewindBtn');
+  const forwardBtn = document.getElementById('forwardBtn');
+  const loopBtn = document.getElementById('loopBtn');
   const hasAudio = !!item.audioUrl;
+  if (hasAudio) audio.src = item.audioUrl;
 
   if (!hasAudio) {
     playBtn.disabled = true;
@@ -99,6 +190,15 @@
     if (!hasAudio) return;
     audio.currentTime = Math.max(0, audio.currentTime - 10);
   });
+  forwardBtn.addEventListener('click', () => {
+    if (!hasAudio) return;
+    audio.currentTime = Math.min(audio.duration || Infinity, audio.currentTime + 10);
+  });
+
+  loopBtn.addEventListener('click', () => {
+    audio.loop = !audio.loop;
+    loopBtn.classList.toggle('active', audio.loop);
+  });
 
   speedSelect.addEventListener('change', () => {
     audio.playbackRate = parseFloat(speedSelect.value);
@@ -109,7 +209,7 @@
     scrubFill.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
   });
   audio.addEventListener('ended', () => {
-    playBtn.innerHTML = playIcon();
+    if (!audio.loop) playBtn.innerHTML = playIcon();
   });
   scrub.addEventListener('click', (e) => {
     if (!hasAudio || !audio.duration) return;
@@ -158,13 +258,12 @@
 
     recognition.onerror = (event) => {
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        statusEl.textContent = "Mikrofonga ruxsat berilmadi";
+        statusEl.textContent = 'Mikrofonga ruxsat berilmadi';
         stopListening();
       }
     };
 
     recognition.onend = () => {
-      // Ba'zi brauzerlar jim turgach avtomatik to'xtatadi — davom etamiz.
       if (listening) {
         try { recognition.start(); } catch (e) { /* already running */ }
       }
@@ -173,7 +272,7 @@
 
   function startListening() {
     if (!recognition || listening) return;
-    if (pointer >= expectedWords.length) resetReveal();
+    if (mode !== 'practice' || pointer >= expectedWords.length) setMode('practice');
     listening = true;
     micBtn.classList.add('listening');
     statusEl.textContent = 'Tinglayapman... yodingizdan ayting';
@@ -183,7 +282,7 @@
   function stopListening() {
     listening = false;
     micBtn.classList.remove('listening');
-    statusEl.textContent = "Boshlash uchun mikrofonni bosing";
+    statusEl.textContent = 'Boshlash uchun mikrofonni bosing';
     if (recognition) {
       try { recognition.stop(); } catch (e) { /* noop */ }
     }
@@ -192,11 +291,5 @@
   micBtn.addEventListener('click', () => {
     if (listening) stopListening();
     else startListening();
-  });
-
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    stopListening();
-    resetReveal();
-    statusEl.textContent = "Boshlash uchun mikrofonni bosing";
   });
 })();

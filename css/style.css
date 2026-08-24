@@ -264,6 +264,26 @@ img { max-width: 100%; display: block; }
   place-items: center;
   color: var(--ink);
 }
+.player button.icon-btn.labeled {
+  width: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.player button.icon-btn.labeled svg { color: var(--ink); }
+.right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#loopBtn.active {
+  color: var(--accent-ink);
+  background: var(--accent-soft);
+  border-radius: 10px;
+}
 .player button.play-btn {
   width: 46px; height: 46px;
   border-radius: 50%;
@@ -282,8 +302,11 @@ img { max-width: 100%; display: block; }
   border: none;
 }
 
-.arabic-text {
+.arabic-text-wrap {
+  position: relative;
   margin: 18px 16px;
+}
+.arabic-text {
   padding: 22px 18px;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -296,29 +319,42 @@ img { max-width: 100%; display: block; }
   box-shadow: var(--shadow-card);
 }
 .arabic-text .word {
-  display: inline-block;
-  transition: color .25s ease, filter .25s ease, opacity .25s ease;
+  display: inline;
+  transition: color .2s ease, background-color .2s ease;
 }
 .arabic-text .word.hidden {
   color: transparent;
-  filter: blur(0px);
-  position: relative;
-}
-.arabic-text .word.hidden::after {
-  content: '';
-  display: inline-block;
-  width: 100%;
-  height: 0.62em;
   background: var(--surface-sunken);
-  border-radius: 4px;
-  vertical-align: -0.05em;
+  border-radius: 5px;
+  box-shadow: 3px 0 0 var(--surface-sunken), -3px 0 0 var(--surface-sunken);
 }
 .arabic-text .word.revealed { color: var(--ink); }
-.arabic-text .word.current {
-  color: var(--accent-ink);
-  background: var(--accent-soft);
-  border-radius: 6px;
-  padding: 0 3px;
+.arabic-text .word.wrong {
+  color: var(--danger);
+  background: rgba(185, 92, 70, 0.14);
+  border-radius: 5px;
+  box-shadow: 3px 0 0 rgba(185, 92, 70, 0.14), -3px 0 0 rgba(185, 92, 70, 0.14);
+}
+
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.pill-btn.floating {
+  position: absolute;
+  top: -14px;
+  left: 16px;
+  box-shadow: var(--shadow-card);
+  z-index: 2;
 }
 
 .mic-dock {
