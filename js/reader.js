@@ -4,10 +4,12 @@
   const item = await loadItem(textId);
 
   async function loadItem(id) {
-    if (id && window.__FIREBASE_READY__) {
+    const fbs = await window.firebaseReady;
+    if (id && fbs) {
       try {
-        const doc = await db.collection('texts').doc(id).get();
-        if (doc.exists) return { id: doc.id, ...doc.data() };
+        const ref = fbs.doc(fbs.db, 'texts', id);
+        const snap = await fbs.getDoc(ref);
+        if (snap.exists()) return { id: snap.id, ...snap.data() };
       } catch (e) {
         console.error('Firestore xato, namuna matnga o\'tildi:', e);
       }

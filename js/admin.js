@@ -34,20 +34,19 @@
     const text = document.getElementById('fText').value.trim();
     const audioUrl = document.getElementById('fAudio').value.trim();
 
-    const record = {
-      title,
-      level,
-      text,
-      audioUrl,
-      progress: 0,
-      createdAt: window.__FIREBASE_READY__
-        ? firebase.firestore.FieldValue.serverTimestamp()
-        : new Date().toISOString()
-    };
-
     try {
-      if (window.__FIREBASE_READY__) {
-        await db.collection('texts').add(record);
+      const fbs = await window.firebaseReady;
+      const record = {
+        title,
+        level,
+        text,
+        audioUrl,
+        progress: 0,
+        createdAt: fbs ? fbs.serverTimestamp() : new Date().toISOString()
+      };
+
+      if (fbs) {
+        await fbs.addDoc(fbs.collection(fbs.db, 'texts'), record);
       } else {
         const saved = JSON.parse(localStorage.getItem('tanass_draft_texts') || '[]');
         saved.push(record);

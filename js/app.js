@@ -58,9 +58,11 @@
   }
 
   async function loadTexts() {
-    if (window.__FIREBASE_READY__) {
+    const fbs = await window.firebaseReady;
+    if (fbs) {
       try {
-        const snap = await db.collection('texts').orderBy('createdAt', 'desc').get();
+        const q = fbs.query(fbs.collection(fbs.db, 'texts'), fbs.orderBy('createdAt', 'desc'));
+        const snap = await fbs.getDocs(q);
         if (!snap.empty) {
           texts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
           render();
@@ -70,7 +72,6 @@
         console.error('Firestore xato, namuna ma\'lumotga o\'tildi:', e);
       }
     }
-    // Firestore bo'sh yoki ulanmagan bo'lsa — namuna matnlar bilan ko'rsatamiz.
     texts = SAMPLE_TEXTS;
     render();
   }
