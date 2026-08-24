@@ -1,9 +1,7 @@
 (function () {
   // Vaqtinchalik oddiy parol tekshiruvi.
-  // MUHIM: bu faqat boshlang'ich himoya. Firebase ulangach buni
-  // Firebase Auth (email/parol yoki Google, admin UID tekshiruvi
-  // bilan) bilan almashtiramiz — hozirgi holat production uchun
-  // yetarli emas, faqat linkni bilmagan odam ko'rmasin degani.
+  // MUHIM: bu faqat boshlang'ich himoya. Keyinroq Firebase Auth
+  // (admin UID tekshiruvi) bilan almashtirish kerak.
   const ADMIN_PASS = 'tanass2026';
 
   const loginBox = document.getElementById('loginBox');
@@ -27,34 +25,44 @@
 
   textForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const submitBtn = textForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saqlanmoqda...';
 
     const title = document.getElementById('fTitle').value.trim();
     const level = document.getElementById('fLevel').value;
     const text = document.getElementById('fText').value.trim();
-    const audioFile = document.getElementById('fAudio').files[0];
+    const audioUrl = document.getElementById('fAudio').value.trim();
 
     const record = {
       title,
       level,
       text,
-      audioUrl: '', // Firebase Storage ulanganda shu yerga yuklangan fayl URL'i yoziladi
-      createdAt: new Date().toISOString()
+      audioUrl,
+      progress: 0,
+      createdAt: window.__FIREBASE_READY__
+        ? firebase.firestore.FieldValue.serverTimestamp()
+        : new Date().toISOString()
     };
 
-    if (window.__FIREBASE_READY__) {
-      // TODO: Firestore'ga yozish va Storage'ga audio yuklash shu yerda bo'ladi.
-      // await addDoc(collection(db, 'texts'), record);
-    } else {
-      // Demo rejim: natijani ko'rsatamiz va localStorage'ga qo'shamiz,
-      // shunda Firebase ulanmasdan oldin ham formani sinab ko'rish mumkin.
-      const saved = JSON.parse(localStorage.getItem('tanass_draft_texts') || '[]');
-      saved.push(record);
-      localStorage.setItem('tanass_draft_texts', JSON.stringify(saved));
+    try {
+      if (window.__FIREBASE_READY__) {
+        await db.collection('texts').add(record);
+      } else {
+        const saved = JSON.parse(localStorage.getItem('tanass_draft_texts') || '[]');
+        saved.push(record);
+        localStorage.setItem('tanass_draft_texts', JSON.stringify(saved));
+      }
+      document.getElementById('resultJson').textContent =
+        `"${title}" saqlandi. Bosh sahifada darhol ko'rinadi.`;
+      document.getElementById('resultBox').style.display = 'block';
+      textForm.reset();
+    } catch (err) {
+      console.error(err);
+      alert("Xatolik: " + err.message + "\n\nFirestore qoidalarini (rules) tekshiring.");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Saqlash';
     }
-
-    document.getElementById('resultJson').textContent = JSON.stringify(record, null, 2)
-      + (audioFile ? `\n\n(audio fayl tanlandi: ${audioFile.name} — Firebase ulanganda avtomatik yuklanadi)` : '');
-    document.getElementById('resultBox').style.display = 'block';
-    textForm.reset();
   });
 })();

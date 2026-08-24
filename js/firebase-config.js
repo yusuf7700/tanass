@@ -1,20 +1,15 @@
-// TODO: Firebase loyihangiz sozlamalarini shu yerga qo'ying.
-// Firebase Console -> Project settings -> General -> Your apps -> SDK setup.
-//
-// Buni to'ldirgach, index.html/read.html/admin.html ichiga quyidagi
-// skriptlarni ulash kerak bo'ladi:
-//   <script type="module" src="js/firebase-init.js"></script>
-// (firebase-init.js'ni keyingi bosqichda birga tayyorlaymiz)
-
+// Tanass — Firebase ulanishi (Firestore).
+// Audio fayllar hozircha GitHub repo ichidan (audio/ papka) beriladi,
+// shuning uchun Storage shart emas — billing kerak bo'lmaydi.
 const firebaseConfig = {
-  apiKey: "TODO",
-  authDomain: "TODO.firebaseapp.com",
-  projectId: "TODO",
-  storageBucket: "TODO.appspot.com",
-  messagingSenderId: "TODO",
-  appId: "TODO"
+  apiKey: "AIzaSyDnvWsFODANLMYz_12pgmJAZYokswCWWjw",
+  authDomain: "tanass.firebaseapp.com",
+  projectId: "tanass",
+  storageBucket: "tanass.firebasestorage.app",
+  messagingSenderId: "672855852722",
+  appId: "1:672855852722:web:9359185cd3d2188b7eabab"
 };
 
-// Hozircha Firebase ulanmagan — admin.js shu holatni aniqlab,
-// "demo rejim"da (faqat konsolga/JSON ko'rinishda) ishlaydi.
-window.__FIREBASE_READY__ = false;
+firebase.initializeApp(firebaseConfig);
+window.db = firebase.firestore();
+window.__FIREBASE_READY__ = true;

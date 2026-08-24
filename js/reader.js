@@ -1,7 +1,19 @@
-(function () {
+(async function () {
   const params = new URLSearchParams(location.search);
   const textId = params.get('id');
-  const item = SAMPLE_TEXTS.find((t) => t.id === textId) || SAMPLE_TEXTS[0];
+  const item = await loadItem(textId);
+
+  async function loadItem(id) {
+    if (id && window.__FIREBASE_READY__) {
+      try {
+        const doc = await db.collection('texts').doc(id).get();
+        if (doc.exists) return { id: doc.id, ...doc.data() };
+      } catch (e) {
+        console.error('Firestore xato, namuna matnga o\'tildi:', e);
+      }
+    }
+    return SAMPLE_TEXTS.find((t) => t.id === id) || SAMPLE_TEXTS[0];
+  }
 
   document.getElementById('readerTitle').textContent = item.title;
 
