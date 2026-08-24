@@ -1,0 +1,17 @@
+{
+  "name": "Tanass — arab tilida matn yodlash",
+  "short_name": "Tanass",
+  "description": "Arab tilidagi matnlarni tinglab va yodakidan aytib mashq qiling",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FAF7F1",
+  "theme_color": "#FAF7F1",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

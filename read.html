@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tanass — o'qish</title>
+<meta name="theme-color" content="#FAF7F1">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Noto+Naskh+Arabic:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="screen">
+  <div class="reader-header">
+    <a href="index.html" class="back-btn" aria-label="Orqaga">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <h2 id="readerTitle">Matn</h2>
+    <button id="resetBtn" class="icon-btn" aria-label="Qayta boshlash" style="width:38px;height:38px;">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+    </button>
+  </div>
+
+  <div class="player" id="player">
+    <div class="scrub" id="scrub"><div class="fill" id="scrubFill"></div></div>
+    <div class="controls">
+      <div class="group">
+        <button id="rewindBtn" class="icon-btn" aria-label="10 soniya orqaga">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        </button>
+        <button id="playBtn" class="play-btn" aria-label="Ijro etish"></button>
+      </div>
+      <select id="speedSelect" class="speed-select">
+        <option value="0.5">0.5x</option>
+        <option value="0.75">0.75x</option>
+        <option value="1" selected>1x</option>
+        <option value="1.25">1.25x</option>
+        <option value="1.5">1.5x</option>
+        <option value="2">2x</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="arabic-text" id="arabicText"></div>
+</div>
+
+<div class="mic-dock">
+  <div class="status" id="micStatus">Boshlash uchun mikrofonni bosing</div>
+  <button class="mic-btn" id="micBtn" aria-label="Mikrofon">
+    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+  </button>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/reader.js"></script>
+</body>
+</html>
