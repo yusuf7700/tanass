@@ -157,10 +157,10 @@
   function isSimilar(a, b) {
     if (!a || !b) return false;
     if (a === b) return true;
-    if (a.length >= 3 && b.length >= 3 && (a.includes(b) || b.includes(a))) return true;
+    if (a.length >= 2 && b.length >= 2 && (a.includes(b) || b.includes(a))) return true;
     const dist = levenshtein(a, b);
     const maxLen = Math.max(a.length, b.length);
-    return dist / maxLen <= 0.25; // ~75%+ moslik
+    return dist / maxLen <= 0.45; // yaqin talaffuz/tanish xatosi ham qabul qilinadi
   }
 
   // ---------- tasdiqlash bilan ochish ----------
