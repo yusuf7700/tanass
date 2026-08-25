@@ -1,19 +1,19 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v8';
+const CACHE_VERSION = 'tanass-v9';
 
 const CORE_ASSETS = [
   '/index.html',
   '/read.html',
-  '/progress.html',
-  '/settings.html',
   '/css/style.css',
   '/js/app.js',
   '/js/reader.js',
   '/js/data.js',
   '/js/progress-store.js',
+  '/js/progress-page.js',
   '/js/firebase-config.js',
   '/js/auth.js',
   '/js/settings.js',
+  '/js/router.js',
   '/js/install-banner.js',
   '/manifest.json',
   '/icons/icon-192.png',

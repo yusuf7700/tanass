@@ -77,5 +77,14 @@
     render();
   }
 
-  loadTexts();
+  let loaded = false;
+  window.TanassViews = window.TanassViews || {};
+  window.TanassViews.texts = function () {
+    if (!loaded) {
+      loaded = true;
+      loadTexts();
+    } else {
+      render(); // progress ring'larni yangilash uchun qayta chizamiz, qayta so'rov yubormaymiz
+    }
+  };
 })();

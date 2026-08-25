@@ -54,5 +54,8 @@
     `).join('');
   }
 
-  loadTexts().then(render);
+  window.TanassViews = window.TanassViews || {};
+  window.TanassViews.progress = function () {
+    loadTexts().then(render);
+  };
 })();
