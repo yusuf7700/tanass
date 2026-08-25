@@ -219,10 +219,12 @@
     }
     if (pointer === startPointer && hadRealWord) {
       consecutiveMisses++;
-      // Faqat ketma-ket bir necha marta hech narsa mos kelmasa (foydalanuvchi
-      // chindan boshqa joydan boshlagan bo'lishi mumkin) qidiruv qilamiz —
-      // tasodifiy bitta so'z mosligidan noto'g'ri sakrab ketmaslik uchun.
-      if (consecutiveMisses >= 3) {
+      // Resync FAQAT eng boshida (hali birorta so'z tasdiqlanmagan bo'lsa)
+      // ishlaydi — masalan matnning o'rtasidan boshlash uchun. Bir marta
+      // birinchi so'z to'g'ri topilgach, davomida faqat ketma-ketlikda
+      // ishlaydi — boshqa hech qachon sakramaydi.
+      const canResync = pointer === 0 && revealedCount === 0;
+      if (canResync && consecutiveMisses >= 3) {
         const resyncIndex = findResyncStart(transcriptWords);
         if (resyncIndex !== -1) {
           commitPending();
