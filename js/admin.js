@@ -18,6 +18,34 @@
     textForm.style.display = 'block';
     listSection.style.display = 'block';
     loadList();
+    checkDrafts();
+  }
+
+  async function checkDrafts() {
+    const drafts = JSON.parse(localStorage.getItem('tanass_draft_texts') || '[]');
+    if (drafts.length === 0) return;
+    const banner = document.createElement('div');
+    banner.style.cssText = 'background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--radius-md);padding:12px 14px;margin-bottom:16px;font-size:13px;';
+    banner.innerHTML = `
+      <b>${drafts.length} ta saqlanmagan matn topildi</b> (Firebase ulanmasdan oldin qo'shilgan, shu qurilmada saqlangan).<br>
+      <button type="button" id="migrateBtn" class="btn-primary" style="margin-top:8px;width:auto;padding:8px 16px;font-size:13px;">Firestore'ga ko'chirish</button>
+    `;
+    textForm.parentElement.insertBefore(banner, textForm);
+    document.getElementById('migrateBtn').addEventListener('click', async () => {
+      const fbs = await window.firebaseReady;
+      if (!fbs) { alert("Firebase ulanmagan."); return; }
+      for (const rec of drafts) {
+        await fbs.addDoc(fbs.collection(fbs.db, 'texts'), {
+          title: rec.title, level: rec.level, text: rec.text,
+          audioUrl: rec.audioUrl || '', progress: 0,
+          createdAt: fbs.serverTimestamp()
+        });
+      }
+      localStorage.removeItem('tanass_draft_texts');
+      banner.remove();
+      loadList();
+      alert(`${drafts.length} ta matn muvaffaqiyatli ko'chirildi.`);
+    });
   }
 
   document.getElementById('loginBtn').addEventListener('click', () => {
