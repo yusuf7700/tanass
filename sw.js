@@ -1,5 +1,5 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v10';
+const CACHE_VERSION = 'tanass-v11';
 
 const CORE_ASSETS = [
   '/index.html',
@@ -11,6 +11,7 @@ const CORE_ASSETS = [
   '/js/reader.js',
   '/js/data.js',
   '/js/progress-store.js',
+  '/js/texts-store.js',
   '/js/progress-page.js',
   '/js/firebase-config.js',
   '/js/auth.js',

@@ -2,21 +2,6 @@
   const summaryEl = document.getElementById('progressSummary');
   const listEl = document.getElementById('progressList');
 
-  async function loadTexts() {
-    if (window.syncProgressWithCloud) { try { await syncProgressWithCloud(); } catch (e) { /* ignore */ } }
-    const fbs = await window.firebaseReady;
-    if (fbs) {
-      try {
-        const q = fbs.query(fbs.collection(fbs.db, 'texts'), fbs.orderBy('createdAt', 'desc'));
-        const snap = await fbs.getDocs(q);
-        if (!snap.empty) return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      } catch (e) {
-        console.error('Firestore xato, namuna ma\'lumotga o\'tildi:', e);
-      }
-    }
-    return SAMPLE_TEXTS;
-  }
-
   function render(texts) {
     const withProgress = texts.map((t) => ({
       ...t,
@@ -56,6 +41,8 @@
 
   window.TanassViews = window.TanassViews || {};
   window.TanassViews.progress = function () {
-    loadTexts().then(render);
+    // getProgress() localStorage'dan darhol o'qiydi; matnlar ro'yxati esa
+    // umumiy keshdan olinadi (agar keshlangan bo'lsa — tarmoq so'rovsiz).
+    window.TanassTexts.getTexts().then(render);
   };
 })();

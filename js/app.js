@@ -58,22 +58,7 @@
   }
 
   async function loadTexts() {
-    if (window.syncProgressWithCloud) { try { await syncProgressWithCloud(); } catch (e) { /* ignore */ } }
-    const fbs = await window.firebaseReady;
-    if (fbs) {
-      try {
-        const q = fbs.query(fbs.collection(fbs.db, 'texts'), fbs.orderBy('createdAt', 'desc'));
-        const snap = await fbs.getDocs(q);
-        if (!snap.empty) {
-          texts = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-          render();
-          return;
-        }
-      } catch (e) {
-        console.error('Firestore xato, namuna ma\'lumotga o\'tildi:', e);
-      }
-    }
-    texts = SAMPLE_TEXTS;
+    texts = await window.TanassTexts.getTexts();
     render();
   }
 
