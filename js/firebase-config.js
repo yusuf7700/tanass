@@ -6,7 +6,7 @@ window.firebaseReady = (async () => {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js");
     const {
       getFirestore, collection, query, orderBy, getDocs,
-      doc, getDoc, addDoc, serverTimestamp
+      doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp
     } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
 
     const firebaseConfig = {
@@ -22,7 +22,7 @@ window.firebaseReady = (async () => {
     const db = getFirestore(app);
 
     window.__FIREBASE_READY__ = true;
-    return { db, collection, query, orderBy, getDocs, doc, getDoc, addDoc, serverTimestamp };
+    return { db, collection, query, orderBy, getDocs, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp };
   } catch (e) {
     console.error('Firebase ulanmadi:', e);
     window.__FIREBASE_READY__ = false;

@@ -50,12 +50,20 @@
       </div>
     </div>
 
-    <button type="submit" class="btn-primary">Saqlash</button>
+    <div class="field" style="display:flex; gap:10px;">
+      <button type="submit" class="btn-primary" id="submitBtn" style="flex:1;">Saqlash</button>
+      <button type="button" class="btn-secondary" id="cancelEditBtn" style="display:none; flex:1;">Bekor qilish</button>
+    </div>
   </form>
 
   <div id="resultBox" style="display:none;margin-top:20px;">
     <p style="font-weight:700;">✅ Saqlandi</p>
     <pre id="resultJson" style="background:var(--surface-sunken);padding:12px;border-radius:10px;font-size:12px;white-space:pre-wrap;"></pre>
+  </div>
+
+  <div id="listSection" style="display:none;margin-top:32px;">
+    <h2 style="font-size:16px;margin-bottom:10px;">Mavjud matnlar</h2>
+    <div id="adminList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 </div>
 
