@@ -83,6 +83,7 @@
     if (span) {
       span.classList.remove('hidden');
       span.classList.add('revealed');
+      span.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     revealedCount++;
     if (window.setProgress && item.id) {
@@ -90,6 +91,18 @@
     }
   }
   let revealedCount = 0;
+
+  function markSkipped(i) {
+    const span = textEl.querySelector(`.word[data-i="${i}"]`);
+    if (span) {
+      span.classList.remove('hidden');
+      span.classList.add('skipped');
+    }
+    revealedCount++;
+    if (window.setProgress && item.id) {
+      setProgress(item.id, Math.round((revealedCount / expectedWords.length) * 100));
+    }
+  }
 
   // ---------- xato signal (bir soniyalik "wrong" tovushi + so'zni qizil ko'rsatish) ----------
   let audioCtx;
@@ -117,6 +130,7 @@
     if (span) {
       span.classList.remove('hidden');
       span.classList.add('wrong');
+      span.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setTimeout(() => {
         span.classList.remove('wrong');
         if (mode === 'practice') span.classList.add('hidden');
@@ -203,8 +217,40 @@
       ti++;
     }
     if (pointer === startPointer && hadRealWord) {
-      flashWrong();
+      const resyncIndex = findResyncStart(transcriptWords);
+      if (resyncIndex !== -1) {
+        // Foydalanuvchi matnning boshqa joyidan (masalan o'rtasidan) boshlagan —
+        // orasidagi so'zlarni "o'tkazib yuborilgan" deb belgilab, o'sha yerga o'tamiz.
+        commitPending();
+        for (let k = pointer; k < resyncIndex; k++) markSkipped(k);
+        pointer = resyncIndex;
+        matchWord(pointer); pointer++;
+        if (pointer < expectedWords.length) { matchWord(pointer); pointer++; }
+        statusEl.textContent = "🔄 Matn davomiga moslashtirildi, davom eting";
+        const nextSpan = textEl.querySelector(`.word[data-i="${Math.min(pointer, expectedWords.length - 1)}"]`);
+        if (nextSpan) nextSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        flashWrong();
+      }
     }
+  }
+
+  // Agar joriy nuqtada mos kelmasa, matnning qolgan qismidan ketma-ket
+  // 2 ta so'zlik moslikni qidiradi — shu orqali "o'rtadan boshlash" ishlaydi.
+  const RESYNC_RUN = 2;
+  function findResyncStart(transcriptWords) {
+    const normTranscript = transcriptWords.map(normalize).filter((w) => w.length >= 1);
+    if (normTranscript.length < RESYNC_RUN) return -1;
+    for (let start = pointer + 1; start <= expectedWords.length - RESYNC_RUN; start++) {
+      for (let ti = 0; ti <= normTranscript.length - RESYNC_RUN; ti++) {
+        let ok = true;
+        for (let k = 0; k < RESYNC_RUN; k++) {
+          if (!isSimilar(normTranscript[ti + k], normalize(expectedWords[start + k]))) { ok = false; break; }
+        }
+        if (ok) return start;
+      }
+    }
+    return -1;
   }
 
   // ---------- audio player ----------

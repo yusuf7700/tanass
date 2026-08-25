@@ -329,6 +329,10 @@ img { max-width: 100%; display: block; }
   box-shadow: 3px 0 0 var(--surface-sunken), -3px 0 0 var(--surface-sunken);
 }
 .arabic-text .word.revealed { color: var(--ink); }
+.arabic-text .word.skipped {
+  color: var(--ink-faint);
+  font-style: italic;
+}
 .arabic-text .word.wrong {
   color: var(--danger);
   background: rgba(185, 92, 70, 0.14);
