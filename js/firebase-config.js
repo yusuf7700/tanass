@@ -5,7 +5,7 @@ window.firebaseReady = (async () => {
   try {
     const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js");
     const {
-      getFirestore, collection, query, orderBy, getDocs,
+      initializeFirestore, collection, query, orderBy, getDocs,
       doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp
     } = await import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js");
 
@@ -19,7 +19,10 @@ window.firebaseReady = (async () => {
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // O'zbekiston tarmog'ida standart WebChannel ulanishi sekin/tiqilib
+    // qolishi mumkin — long-polling'ga avtomatik o'tish buni tezlashtiradi
+    // (Taomchi loyihasida ham shu sozlama ishlatilgan).
+    const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 
     window.__FIREBASE_READY__ = true;
     return { app, db, collection, query, orderBy, getDocs, doc, getDoc, setDoc, addDoc, updateDoc, deleteDoc, serverTimestamp };
