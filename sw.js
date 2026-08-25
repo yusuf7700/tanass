@@ -1,15 +1,18 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v4';
+const CACHE_VERSION = 'tanass-v6';
 
 const CORE_ASSETS = [
   '/index.html',
   '/read.html',
   '/progress.html',
+  '/settings.html',
   '/css/style.css',
   '/js/app.js',
   '/js/reader.js',
   '/js/data.js',
   '/js/progress-store.js',
+  '/js/firebase-config.js',
+  '/js/auth.js',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png'
@@ -31,9 +34,6 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Network-first: kod doim yangi bo'lsin (HTML/CSS/JS).
-// Audio/ikon kabi og'ir, kamdan-kam o'zgaruvchi fayllar uchun esa
-// cache-first — birinchi ochilishdan keyin tezda yuklanadi.
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
@@ -41,6 +41,8 @@ self.addEventListener('fetch', (event) => {
   const isStaticAsset = url.pathname.startsWith('/audio/') || url.pathname.startsWith('/icons/');
 
   if (isStaticAsset) {
+    // Cache-first: og'ir, deyarli o'zgarmaydigan fayllar — orqa fonda
+    // qayta yuklamaydi (audio 2-3MB bo'lgani uchun bu muhim).
     event.respondWith(
       caches.match(event.request).then((cached) => {
         if (cached) return cached;
@@ -54,13 +56,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Stale-while-revalidate: sahifa DARHOL keshdan ko'rsatiladi (tez!),
+  // orqa fonda esa yangi versiya yuklab, keyingi safar uchun yangilanadi.
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.open(CACHE_VERSION).then(async (cache) => {
+      const cached = await cache.match(event.request);
+      const networkFetch = fetch(event.request)
+        .then((response) => {
+          cache.put(event.request, response.clone());
+          return response;
+        })
+        .catch(() => cached);
+      return cached || networkFetch;
+    })
   );
 });

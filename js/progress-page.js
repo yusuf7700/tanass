@@ -3,6 +3,7 @@
   const listEl = document.getElementById('progressList');
 
   async function loadTexts() {
+    if (window.syncProgressWithCloud) { try { await syncProgressWithCloud(); } catch (e) { /* ignore */ } }
     const fbs = await window.firebaseReady;
     if (fbs) {
       try {

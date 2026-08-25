@@ -45,8 +45,6 @@
     if (mode === 'practice') {
       pointer = 0;
       revealedCount = 0;
-      pendingIndex = null;
-      clearTimeout(pendingTimer);
       consecutiveMisses = 0;
     }
     renderWords();
@@ -178,30 +176,16 @@
     return dist / maxLen <= 0.45; // yaqin talaffuz/tanish xatosi ham qabul qilinadi
   }
 
-  // ---------- tasdiqlash bilan ochish ----------
-  // So'z darhol ochilmaydi: keyingi so'z aytilganda (tasdiqlangach) yoki
-  // ~3 soniya jim turilsa avtomatik ochiladi. Shu bilan tasodifiy/chala
-  // tanilgan so'zlar darhol ekranga chiqib ketmaydi.
-  const CONFIRM_DELAY_MS = 7000;
-  let pendingIndex = null;
-  let pendingTimer = null;
-
-  function commitPending() {
-    if (pendingIndex === null) return;
-    clearTimeout(pendingTimer);
-    revealWord(pendingIndex);
-    pendingIndex = null;
-    if (pointer >= expectedWords.length) {
+  // ---------- darhol ochish ----------
+  // Moslik chegarasi endi yetarlicha ishonchli, shuning uchun so'z to'g'ri
+  // aytilgach kutmasdan darhol ochiladi (avvalgi "keyingi so'zni kutish"
+  // kechikishi olib tashlandi — u doim "1 so'z orqada" hissini berardi).
+  function matchWord(i) {
+    revealWord(i);
+    if (i + 1 >= expectedWords.length) {
       stopListening();
       statusEl.textContent = 'Tabriklaymiz, tugatdingiz! 🎉';
     }
-  }
-
-  function matchWord(i) {
-    if (pendingIndex !== null) commitPending(); // keyingi so'z tasdiqladi
-    pendingIndex = i;
-    clearTimeout(pendingTimer);
-    pendingTimer = setTimeout(commitPending, CONFIRM_DELAY_MS);
   }
 
   function tryAdvance(transcriptWords) {
@@ -227,7 +211,6 @@
       if (canResync && consecutiveMisses >= 3) {
         const resyncIndex = findResyncStart(transcriptWords);
         if (resyncIndex !== -1) {
-          commitPending();
           const gap = resyncIndex - pointer;
           for (let k = pointer; k < resyncIndex; k++) {
             if (gap <= 3) revealWord(k); else markSkipped(k);
@@ -410,7 +393,6 @@
     listening = false;
     micBtn.classList.remove('listening');
     statusEl.textContent = 'Boshlash uchun mikrofonni bosing';
-    clearTimeout(pendingTimer);
     if (recognition) {
       try { recognition.stop(); } catch (e) { /* noop */ }
     }
