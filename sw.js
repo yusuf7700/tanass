@@ -1,9 +1,11 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v9';
+const CACHE_VERSION = 'tanass-v10';
 
 const CORE_ASSETS = [
   '/index.html',
   '/read.html',
+  '/progress.html',
+  '/settings.html',
   '/css/style.css',
   '/js/app.js',
   '/js/reader.js',
