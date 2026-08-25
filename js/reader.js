@@ -181,7 +181,7 @@
   // So'z darhol ochilmaydi: keyingi so'z aytilganda (tasdiqlangach) yoki
   // ~3 soniya jim turilsa avtomatik ochiladi. Shu bilan tasodifiy/chala
   // tanilgan so'zlar darhol ekranga chiqib ketmaydi.
-  const CONFIRM_DELAY_MS = 3000;
+  const CONFIRM_DELAY_MS = 7000;
   let pendingIndex = null;
   let pendingTimer = null;
 
@@ -219,14 +219,19 @@
     if (pointer === startPointer && hadRealWord) {
       const resyncIndex = findResyncStart(transcriptWords);
       if (resyncIndex !== -1) {
-        // Foydalanuvchi matnning boshqa joyidan (masalan o'rtasidan) boshlagan —
-        // orasidagi so'zlarni "o'tkazib yuborilgan" deb belgilab, o'sha yerga o'tamiz.
+        // Foydalanuvchi matnning boshqa joyidan (masalan o'rtasidan) boshlagan,
+        // yoki ovoz tanish 1-2 so'zni shunchaki eshitmagan bo'lishi mumkin.
+        // Kichik farq bo'lsa — o'sha so'z aytilgan deb hisoblab oddiy ochamiz;
+        // faqat katta sakrash bo'lsa (chindan boshqa joydan boshlagan bo'lsa) "o'tkazib yuborilgan" deb belgilaymiz.
         commitPending();
-        for (let k = pointer; k < resyncIndex; k++) markSkipped(k);
+        const gap = resyncIndex - pointer;
+        for (let k = pointer; k < resyncIndex; k++) {
+          if (gap <= 3) revealWord(k); else markSkipped(k);
+        }
         pointer = resyncIndex;
         matchWord(pointer); pointer++;
         if (pointer < expectedWords.length) { matchWord(pointer); pointer++; }
-        statusEl.textContent = "🔄 Matn davomiga moslashtirildi, davom eting";
+        if (gap > 3) statusEl.textContent = "🔄 Matn davomiga moslashtirildi, davom eting";
         const nextSpan = textEl.querySelector(`.word[data-i="${Math.min(pointer, expectedWords.length - 1)}"]`);
         if (nextSpan) nextSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
