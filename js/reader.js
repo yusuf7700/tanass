@@ -63,6 +63,21 @@
     statusEl.textContent = 'Boshlash uchun mikrofonni bosing';
   });
 
+  const soundBtn = document.getElementById('soundBtn');
+  const soundIconOn = document.getElementById('soundIconOn');
+  const soundIconOff = document.getElementById('soundIconOff');
+  function refreshSoundIcon() {
+    const off = localStorage.getItem('tanass_sound_off') === '1';
+    soundIconOn.style.display = off ? 'none' : 'block';
+    soundIconOff.style.display = off ? 'block' : 'none';
+  }
+  refreshSoundIcon();
+  soundBtn.addEventListener('click', () => {
+    const off = localStorage.getItem('tanass_sound_off') === '1';
+    localStorage.setItem('tanass_sound_off', off ? '0' : '1');
+    refreshSoundIcon();
+  });
+
   function revealWord(i) {
     const span = textEl.querySelector(`.word[data-i="${i}"]`);
     if (span) {
@@ -79,6 +94,7 @@
   // ---------- xato signal (bir soniyalik "wrong" tovushi + so'zni qizil ko'rsatish) ----------
   let audioCtx;
   function beepWrong() {
+    if (localStorage.getItem('tanass_sound_off') === '1') return;
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
       const o = audioCtx.createOscillator();
