@@ -47,6 +47,7 @@
       revealedCount = 0;
       pendingIndex = null;
       clearTimeout(pendingTimer);
+      consecutiveMisses = 0;
     }
     renderWords();
     visLabel.textContent = mode === 'visible' ? 'Berkitish' : "Ko'rsatish";
@@ -217,32 +218,44 @@
       ti++;
     }
     if (pointer === startPointer && hadRealWord) {
-      const resyncIndex = findResyncStart(transcriptWords);
-      if (resyncIndex !== -1) {
-        // Foydalanuvchi matnning boshqa joyidan (masalan o'rtasidan) boshlagan,
-        // yoki ovoz tanish 1-2 so'zni shunchaki eshitmagan bo'lishi mumkin.
-        // Kichik farq bo'lsa — o'sha so'z aytilgan deb hisoblab oddiy ochamiz;
-        // faqat katta sakrash bo'lsa (chindan boshqa joydan boshlagan bo'lsa) "o'tkazib yuborilgan" deb belgilaymiz.
-        commitPending();
-        const gap = resyncIndex - pointer;
-        for (let k = pointer; k < resyncIndex; k++) {
-          if (gap <= 3) revealWord(k); else markSkipped(k);
+      consecutiveMisses++;
+      // Faqat ketma-ket bir necha marta hech narsa mos kelmasa (foydalanuvchi
+      // chindan boshqa joydan boshlagan bo'lishi mumkin) qidiruv qilamiz —
+      // tasodifiy bitta so'z mosligidan noto'g'ri sakrab ketmaslik uchun.
+      if (consecutiveMisses >= 3) {
+        const resyncIndex = findResyncStart(transcriptWords);
+        if (resyncIndex !== -1) {
+          commitPending();
+          const gap = resyncIndex - pointer;
+          for (let k = pointer; k < resyncIndex; k++) {
+            if (gap <= 3) revealWord(k); else markSkipped(k);
+          }
+          pointer = resyncIndex;
+          for (let n = 0; n < RESYNC_RUN && pointer < expectedWords.length; n++) {
+            matchWord(pointer);
+            pointer++;
+          }
+          if (gap > 3) statusEl.textContent = "🔄 Matn davomiga moslashtirildi, davom eting";
+          const nextSpan = textEl.querySelector(`.word[data-i="${Math.min(pointer, expectedWords.length - 1)}"]`);
+          if (nextSpan) nextSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          consecutiveMisses = 0;
+        } else {
+          flashWrong();
         }
-        pointer = resyncIndex;
-        matchWord(pointer); pointer++;
-        if (pointer < expectedWords.length) { matchWord(pointer); pointer++; }
-        if (gap > 3) statusEl.textContent = "🔄 Matn davomiga moslashtirildi, davom eting";
-        const nextSpan = textEl.querySelector(`.word[data-i="${Math.min(pointer, expectedWords.length - 1)}"]`);
-        if (nextSpan) nextSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
       } else {
         flashWrong();
       }
+    } else {
+      consecutiveMisses = 0;
     }
   }
+  let consecutiveMisses = 0;
 
-  // Agar joriy nuqtada mos kelmasa, matnning qolgan qismidan ketma-ket
-  // 2 ta so'zlik moslikni qidiradi — shu orqali "o'rtadan boshlash" ishlaydi.
-  const RESYNC_RUN = 2;
+  // Agar bir necha marta ketma-ket mos kelmasa, matnning qolgan qismidan
+  // ketma-ket 3 ta so'zlik ANIQ moslikni qidiradi ("o'rtadan boshlash" uchun).
+  // 3 ta so'z talab qilish tasodifiy bitta so'z o'xshashligidan sakrab
+  // ketishning oldini oladi.
+  const RESYNC_RUN = 3;
   function findResyncStart(transcriptWords) {
     const normTranscript = transcriptWords.map(normalize).filter((w) => w.length >= 1);
     if (normTranscript.length < RESYNC_RUN) return -1;
