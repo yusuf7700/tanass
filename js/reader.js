@@ -25,6 +25,21 @@
   const visBtn = document.getElementById('visibilityBtn');
   const visLabel = document.getElementById('visibilityLabel');
 
+  // Har bir qatorning birinchi so'zi qaysi indeksda ekanini bilib olamiz —
+  // dialog qatorlarini (masalan "- ... ?" / "- ... .") ekranda alohida
+  // abzas sifatida ko'rsatish uchun (matn bir uzluksiz oqim bo'lib
+  // qolmasin).
+  const lineStartIndices = (function () {
+    const set = new Set();
+    const lines = splitIntoLines(item.text);
+    let idx = 0;
+    lines.forEach((line, li) => {
+      if (li > 0) set.add(idx);
+      idx += splitIntoWords(line).length;
+    });
+    return set;
+  })();
+
   let pointer = 0;
   let mode = 'visible'; // 'visible' -> o'qish uchun ochiq, 'practice' -> yodlash uchun berkitilgan
 
@@ -34,9 +49,10 @@
         let cls = 'word';
         if (mode === 'practice') cls += i < pointer ? ' revealed' : ' hidden';
         else cls += ' revealed';
-        return `<span class="${cls}" data-i="${i}">${w}</span>`;
+        const prefix = i === 0 ? '' : (lineStartIndices.has(i) ? '<br><br>' : ' ');
+        return `${prefix}<span class="${cls}" data-i="${i}">${w}</span>`;
       })
-      .join(' ');
+      .join('');
   }
   renderWords();
 

@@ -29,5 +29,12 @@ const SAMPLE_TEXTS = [
 
 // Har bir matnni so'zlarga (probel bo'yicha) ajratib beradi.
 function splitIntoWords(text) {
-  return text.trim().split(/\s+/);
+  return text.trim().split(/\s+/).filter(Boolean);
+}
+
+// Matnni qatorlarga ajratadi (bo'sh qatorlar tashlab yuboriladi) — dialog
+// yoki parchalarni ekranda alohida qator/abzas sifatida ko'rsatish uchun
+// ishlatiladi (masalan "- ... ?" ko'rinishidagi muloqotlar).
+function splitIntoLines(text) {
+  return text.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
 }
