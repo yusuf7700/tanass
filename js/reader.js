@@ -80,7 +80,7 @@
   function revealWord(i) {
     const span = textEl.querySelector(`.word[data-i="${i}"]`);
     if (span) {
-      span.classList.remove('hidden');
+      span.classList.remove('hidden', 'wrong');
       span.classList.add('revealed');
       span.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -94,7 +94,7 @@
   function markSkipped(i) {
     const span = textEl.querySelector(`.word[data-i="${i}"]`);
     if (span) {
-      span.classList.remove('hidden');
+      span.classList.remove('hidden', 'wrong');
       span.classList.add('skipped');
     }
     revealedCount++;
@@ -103,7 +103,7 @@
     }
   }
 
-  // ---------- xato signal (ikki bosqichli pastlab boruvchi "xato" tovushi + so'zni qizil ko'rsatish) ----------
+  // ---------- xato signal (BITTA aniq "xato" tovushi + so'z qizil bo'lib QOLADI) ----------
   let audioCtx;
   function ensureAudioCtx() {
     if (!audioCtx) {
@@ -115,45 +115,36 @@
 
   function beepWrong() {
     if (localStorage.getItem('tanass_sound_off') === '1') return;
-    const now = Date.now();
-    if (now - lastBeepAt < 500) return; // ketma-ket juda tez-tez chalinib ketmasin
-    lastBeepAt = now;
     const ctx = ensureAudioCtx();
     if (!ctx) return;
     try {
       const t = ctx.currentTime;
-      const playTone = (freq, start, dur) => {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = 'square';
-        o.frequency.value = freq;
-        o.connect(g);
-        g.connect(ctx.destination);
-        g.gain.setValueAtTime(0.0001, t + start);
-        g.gain.exponentialRampToValueAtTime(0.22, t + start + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + start + dur);
-        o.start(t + start);
-        o.stop(t + start + dur + 0.02);
-      };
-      // Ikki pastlab boruvchi ton — aniq "xato" tovushi (bitta yumshoq sine emas)
-      playTone(300, 0, 0.12);
-      playTone(170, 0.13, 0.18);
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.value = 220;
+      o.connect(g);
+      g.connect(ctx.destination);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+      o.start(t);
+      o.stop(t + 0.3);
     } catch (e) { /* audio context mavjud emas */ }
   }
-  let lastBeepAt = 0;
 
+  // So'z endigina "wrong" holatiga o'tganda — bitta marta beep chalinadi
+  // va qizil bo'lib QOLADI (miltillamaydi). Xuddi shu so'z uchun keyingi
+  // urinishlarda (hali ham xato bo'lsa) ovoz QAYTA chiqmaydi.
   function flashWrong() {
     if (pointer >= expectedWords.length) return;
-    beepWrong();
     const span = textEl.querySelector(`.word[data-i="${pointer}"]`);
+    if (span && span.classList.contains('wrong')) return; // allaqachon qizil — ovozsiz kutamiz
+    beepWrong();
     if (span) {
       span.classList.remove('hidden');
       span.classList.add('wrong');
       span.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => {
-        span.classList.remove('wrong');
-        if (mode === 'practice') span.classList.add('hidden');
-      }, 550);
     }
   }
 
