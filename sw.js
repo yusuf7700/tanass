@@ -1,5 +1,5 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v18';
+const CACHE_VERSION = 'tanass-v19';
 
 const CORE_ASSETS = [
   '/index.html',
@@ -32,11 +32,17 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)))
-    )
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== CACHE_VERSION).map((k) => caches.delete(k)));
+      await self.clients.claim();
+      // Yangi versiya faollashgach, ochiq sahifalarga xabar yuboramiz —
+      // ular o'zini avtomatik yangilaydi (foydalanuvchi qo'lda kesh
+      // tozalashi shart bo'lmasin).
+      const allClients = await self.clients.matchAll({ type: 'window' });
+      allClients.forEach((client) => client.postMessage({ type: 'TANASS_SW_UPDATED' }));
+    })()
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', (event) => {
@@ -61,16 +67,20 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first: HAR DOIM avval tarmoqdan eng yangi versiyani so'raydi
-  // (shu bilan telefonlarda "eski kod ishlab turibdi" muammosi butunlay
-  // bartaraf etiladi). Faqat internet bo'lmasa keshga qaytadi.
+  // Stale-while-revalidate: sahifa DARHOL keshdan ko'rsatiladi (tez!),
+  // orqa fonda esa yangi versiya yuklanadi. Yangi deploy chiqqanda esa
+  // yuqoridagi 'activate' xabari orqali sahifa avtomatik yangilanadi —
+  // shuning uchun tezlik ham, yangilik ham birga ta'minlanadi.
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    caches.open(CACHE_VERSION).then(async (cache) => {
+      const cached = await cache.match(event.request);
+      const networkFetch = fetch(event.request)
+        .then((response) => {
+          cache.put(event.request, response.clone());
+          return response;
+        })
+        .catch(() => cached);
+      return cached || networkFetch;
+    })
   );
 });

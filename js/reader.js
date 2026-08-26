@@ -354,10 +354,10 @@
           flashWrong();
         }
       } else {
-        // Bitta tasodifiy kechikish (STT birozgina orqada qolishi) uchun
-        // darhol xato ko'rsatmaymiz — ketma-ket 2-marta mos kelmasagina
-        // xato belgisi chiqadi.
-        if (consecutiveMisses >= 2) flashWrong();
+        // Bitta-ikkita tasodifiy kechikish (STT birozgina orqada qolishi)
+        // uchun darhol xato ko'rsatmaymiz — ketma-ket 3-marta mos
+        // kelmasagina xato belgisi chiqadi.
+        if (consecutiveMisses >= 3) flashWrong();
       }
     } else {
       consecutiveMisses = 0;
@@ -504,8 +504,20 @@
     };
 
     recognition.onend = () => {
-      if (listening) {
-        try { recognition.start(); } catch (e) { /* already running */ }
+      if (!listening) return;
+      const elapsed = Date.now() - listenStartedAt;
+      if (elapsed < 2500) {
+        // Juda tez tugagan — texnik uzilish (masalan tarmoq/OS), sezilmasdan
+        // qayta ulanamiz.
+        try { recognition.start(); listenStartedAt = Date.now(); } catch (e) { /* already running */ }
+      } else {
+        // Android ba'zi qurilmalarda uzoq tinglashni o'zi to'xtatib, har safar
+        // qayta ishga tushirilganda tizim ovozini ("tiling-tilang") chiqaradi.
+        // Shuning uchun uzoq sessiyalarda avtomatik qayta boshlamaymiz —
+        // mikrofonni yana bir marta bosish kifoya.
+        listening = false;
+        micBtn.classList.remove('listening');
+        statusEl.textContent = 'Davom etish uchun mikrofonni qayta bosing';
       }
     };
   }
@@ -516,10 +528,12 @@
     if (!audio.paused) { audio.pause(); playBtn.innerHTML = playIcon(); } // ovoz mikrofonga xalaqit bermasin
     if (mode !== 'practice' || pointer >= expectedWords.length) setMode('practice');
     listening = true;
+    listenStartedAt = Date.now();
     micBtn.classList.add('listening');
     statusEl.textContent = 'Tinglayapman... yodingizdan ayting';
     try { recognition.start(); } catch (e) { /* already running */ }
   }
+  let listenStartedAt = 0;
 
   function stopListening() {
     listening = false;

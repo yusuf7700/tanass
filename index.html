@@ -89,6 +89,12 @@
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+  // Yangi versiya (deploy) faollashganda service worker shu xabarni
+  // yuboradi — sahifa o'zini avtomatik yangilaydi, foydalanuvchi qo'lda
+  // kesh tozalashi shart bo'lmaydi.
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'TANASS_SW_UPDATED') location.reload();
+  });
 }
 </script>
 </body>
