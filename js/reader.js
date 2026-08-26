@@ -149,6 +149,104 @@
       .trim();
   }
 
+  // ---------- Raqamlar: "besh", "yigirma bir" kabi sonlarni aytganda,
+  // ovoz tanish tizimi ba'zida buni harflar bilan emas, "٥"/"21" kabi
+  // raqam shaklida qaytaradi. normalize() bunday belgilarni o'chirib
+  // tashlaganligi sabab, matndagi yozma arabcha son so'zi bilan hech
+  // qachon mos kelmasdi. Shuning uchun raqam <-> yozma son so'zini
+  // alohida solishtiramiz (0 dan 100 gacha).
+  const AR_INDIC_DIGITS = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' };
+  function toWesternDigits(s) {
+    return s.replace(/[٠-٩]/g, (d) => AR_INDIC_DIGITS[d]);
+  }
+  function rawToNumeral(raw) {
+    const w = toWesternDigits(String(raw).trim());
+    return /^[0-9]+$/.test(w) ? String(parseInt(w, 10)) : null;
+  }
+  // Kalitlar normalize()dan keyingi shaklda (ة->ه, hamzalar ا ga birlashtirilgan).
+  const UNIT_WORD_TO_NUMERAL = {
+    'صفر': '0',
+    'واحد': '1', 'واحده': '1', 'احد': '1', 'احدي': '1',
+    'اثنان': '2', 'اثنين': '2', 'ثنتان': '2', 'ثنتين': '2', 'اثنا': '2', 'اثني': '2', 'اثنتا': '2', 'اثنتي': '2',
+    'ثلاثه': '3', 'ثلاث': '3',
+    'اربعه': '4', 'اربع': '4',
+    'خمسه': '5', 'خمس': '5',
+    'سته': '6', 'ست': '6',
+    'سبعه': '7', 'سبع': '7',
+    'ثمانيه': '8', 'ثمان': '8',
+    'تسعه': '9', 'تسع': '9',
+    'عشره': '10', 'عشر': '10'
+  };
+  // Faqat "عشر"/"عشره" — teen sonlarda ikkinchi so'z sifatida ("+10" qo'shimchasi)
+  const TEEN_SUFFIX = new Set(['عشر', 'عشره']);
+  const TENS_WORD_TO_NUMERAL = {
+    'عشرون': '20', 'عشرين': '20',
+    'ثلاثون': '30', 'ثلاثين': '30',
+    'اربعون': '40', 'اربعين': '40',
+    'خمسون': '50', 'خمسين': '50',
+    'ستون': '60', 'ستين': '60',
+    'سبعون': '70', 'سبعين': '70',
+    'ثمانون': '80', 'ثمانين': '80',
+    'تسعون': '90', 'تسعين': '90'
+  };
+  const HUNDRED_WORDS = new Set(['مئه', 'مائه']);
+
+  function wordToNumeral(normWord) {
+    return UNIT_WORD_TO_NUMERAL[normWord] || TENS_WORD_TO_NUMERAL[normWord] || (HUNDRED_WORDS.has(normWord) ? '100' : null);
+  }
+
+  // rawWord — ovoz tanishdan kelgan xom so'z, normExpected — matndagi
+  // kutilayotgan (bitta) so'zning normalize() qilingan shakli.
+  function numeralsMatch(rawWord, normExpected) {
+    const normRaw = normalize(rawWord);
+    const numFromTranscript = rawToNumeral(rawWord) || wordToNumeral(normRaw);
+    const numFromExpected = rawToNumeral(normExpected) || wordToNumeral(normExpected);
+    return !!(numFromTranscript && numFromExpected && numFromTranscript === numFromExpected);
+  }
+
+  // Matndagi ketma-ket 1-2 so'zni bitta son sifatida o'qishga urinadi
+  // (masalan "خمسة عشر" = 15, "واحد وعشرون" = 21). Topilsa
+  // { numeral, consumed } qaytaradi, aks holda null.
+  function expectedCompoundNumeral(idx) {
+    if (idx >= expectedWords.length) return null;
+    const w0 = normalize(expectedWords[idx]);
+    const w1 = idx + 1 < expectedWords.length ? normalize(expectedWords[idx + 1]) : null;
+
+    // Teen: unit + "عشر"/"عشره"  ->  10 + unit  (11-19)
+    if (w1 && TEEN_SUFFIX.has(w1) && UNIT_WORD_TO_NUMERAL.hasOwnProperty(w0)) {
+      const unit = parseInt(UNIT_WORD_TO_NUMERAL[w0], 10);
+      if (unit >= 1 && unit <= 9) return { numeral: String(10 + unit), consumed: 2 };
+    }
+
+    // 21-99 (o'nlik bo'lmagan): unit + "و" + o'nlik so'zi bitta token
+    // sifatida yozilgan (masalan "وعشرون")
+    if (w1 && w1.charAt(0) === 'و' && UNIT_WORD_TO_NUMERAL.hasOwnProperty(w0)) {
+      const tensPart = w1.slice(1);
+      if (TENS_WORD_TO_NUMERAL.hasOwnProperty(tensPart)) {
+        const unit = parseInt(UNIT_WORD_TO_NUMERAL[w0], 10);
+        const tens = parseInt(TENS_WORD_TO_NUMERAL[tensPart], 10);
+        if (unit >= 1 && unit <= 9) return { numeral: String(tens + unit), consumed: 2 };
+      }
+    }
+
+    // Yolg'iz o'nlik (20, 30 ... 90)
+    if (TENS_WORD_TO_NUMERAL.hasOwnProperty(w0)) {
+      return { numeral: TENS_WORD_TO_NUMERAL[w0], consumed: 1 };
+    }
+
+    // Yolg'iz 100
+    if (HUNDRED_WORDS.has(w0)) {
+      return { numeral: '100', consumed: 1 };
+    }
+
+    // Yolg'iz birlik (0-10)
+    if (UNIT_WORD_TO_NUMERAL.hasOwnProperty(w0)) {
+      return { numeral: UNIT_WORD_TO_NUMERAL[w0], consumed: 1 };
+    }
+
+    return null;
+  }
+
   function levenshtein(a, b) {
     const m = a.length, n = b.length;
     if (m === 0) return n;
@@ -180,9 +278,10 @@
   // Moslik chegarasi endi yetarlicha ishonchli, shuning uchun so'z to'g'ri
   // aytilgach kutmasdan darhol ochiladi (avvalgi "keyingi so'zni kutish"
   // kechikishi olib tashlandi — u doim "1 so'z orqada" hissini berardi).
-  function matchWord(i) {
-    revealWord(i);
-    if (i + 1 >= expectedWords.length) {
+  function matchWord(i, count) {
+    count = count || 1;
+    for (let k = 0; k < count && i + k < expectedWords.length; k++) revealWord(i + k);
+    if (i + count >= expectedWords.length) {
       stopListening();
       statusEl.textContent = 'Tabriklaymiz, tugatdingiz! 🎉';
     }
@@ -193,9 +292,26 @@
     let ti = 0;
     let hadRealWord = false;
     while (ti < transcriptWords.length && pointer < expectedWords.length) {
-      const w = normalize(transcriptWords[ti]);
-      if (w.length >= 1) hadRealWord = true;
-      if (w && isSimilar(w, normalize(expectedWords[pointer]))) {
+      const rawWord = transcriptWords[ti];
+      const w = normalize(rawWord);
+      const expNorm = normalize(expectedWords[pointer]);
+      const rawNumeral = rawToNumeral(rawWord);
+      if (w.length >= 1 || rawNumeral) hadRealWord = true;
+
+      // Agar ovoz tanish butun sonni raqam sifatida qaytargan bo'lsa
+      // (masalan "21"), matndagi 1-2 so'zdan tashkil topgan yozma son
+      // bilan solishtiramiz (masalan "واحد" + "وعشرون").
+      if (rawNumeral) {
+        const compound = expectedCompoundNumeral(pointer);
+        if (compound && compound.numeral === rawNumeral) {
+          matchWord(pointer, compound.consumed);
+          pointer += compound.consumed;
+          ti++;
+          continue;
+        }
+      }
+
+      if ((w && isSimilar(w, expNorm)) || numeralsMatch(rawWord, expNorm)) {
         matchWord(pointer);
         pointer++;
       }
@@ -242,13 +358,15 @@
   // ketishning oldini oladi.
   const RESYNC_RUN = 3;
   function findResyncStart(transcriptWords) {
-    const normTranscript = transcriptWords.map(normalize).filter((w) => w.length >= 1);
-    if (normTranscript.length < RESYNC_RUN) return -1;
+    const valid = transcriptWords.filter((w) => normalize(w).length >= 1 || rawToNumeral(w));
+    if (valid.length < RESYNC_RUN) return -1;
     for (let start = pointer + 1; start <= expectedWords.length - RESYNC_RUN; start++) {
-      for (let ti = 0; ti <= normTranscript.length - RESYNC_RUN; ti++) {
+      for (let ti = 0; ti <= valid.length - RESYNC_RUN; ti++) {
         let ok = true;
         for (let k = 0; k < RESYNC_RUN; k++) {
-          if (!isSimilar(normTranscript[ti + k], normalize(expectedWords[start + k]))) { ok = false; break; }
+          const rawWord = valid[ti + k];
+          const expNorm = normalize(expectedWords[start + k]);
+          if (!(isSimilar(normalize(rawWord), expNorm) || numeralsMatch(rawWord, expNorm))) { ok = false; break; }
         }
         if (ok) return start;
       }
