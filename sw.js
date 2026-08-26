@@ -1,5 +1,5 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v22';
+const CACHE_VERSION = 'tanass-v23';
 
 const CORE_ASSETS = [
   '/index.html',

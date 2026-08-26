@@ -49,7 +49,7 @@
         let cls = 'word';
         if (mode === 'practice') cls += i < pointer ? ' revealed' : ' hidden';
         else cls += ' revealed';
-        const prefix = i === 0 ? '' : (lineStartIndices.has(i) ? '<br><br>' : ' ');
+        const prefix = i === 0 ? '' : (lineStartIndices.has(i) ? '<br>' : ' ');
         return `${prefix}<span class="${cls}" data-i="${i}">${w}</span>`;
       })
       .join('');
