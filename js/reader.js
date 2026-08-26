@@ -115,10 +115,13 @@
 
   function beepWrong() {
     if (localStorage.getItem('tanass_sound_off') === '1') return;
+    const now = Date.now();
+    if (now - lastBeepAt < 500) return; // ketma-ket juda tez-tez chalinib ketmasin
+    lastBeepAt = now;
     const ctx = ensureAudioCtx();
     if (!ctx) return;
     try {
-      const now = ctx.currentTime;
+      const t = ctx.currentTime;
       const playTone = (freq, start, dur) => {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
@@ -126,17 +129,18 @@
         o.frequency.value = freq;
         o.connect(g);
         g.connect(ctx.destination);
-        g.gain.setValueAtTime(0.0001, now + start);
-        g.gain.exponentialRampToValueAtTime(0.22, now + start + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
-        o.start(now + start);
-        o.stop(now + start + dur + 0.02);
+        g.gain.setValueAtTime(0.0001, t + start);
+        g.gain.exponentialRampToValueAtTime(0.22, t + start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + start + dur);
+        o.start(t + start);
+        o.stop(t + start + dur + 0.02);
       };
       // Ikki pastlab boruvchi ton — aniq "xato" tovushi (bitta yumshoq sine emas)
       playTone(300, 0, 0.12);
       playTone(170, 0.13, 0.18);
     } catch (e) { /* audio context mavjud emas */ }
   }
+  let lastBeepAt = 0;
 
   function flashWrong() {
     if (pointer >= expectedWords.length) return;
@@ -280,18 +284,13 @@
   }
 
   // To'liq bir xil bo'lmasa ham, yaqin talaffuz/tanish xatosi bo'lsa qabul qilinadi.
-  // Chegara qattiqlashtirildi (0.45 -> 0.32) — tinch/shovqinli paytda ovoz
-  // tanish tizimi qaytargan tasodifiy so'zlar matndagi qisqa so'zlarga
-  // "o'xshab" ketib, o'zi to'ldirib yubormasligi uchun. "includes" mosligi
-  // ham endi faqat uzunligi yaqin (farq <=1) va kamida 3 harfli so'zlarga
-  // qo'llaniladi — aks holda qisqa so'zlar bir-biriga juda oson mos kelib qolardi.
   function isSimilar(a, b) {
     if (!a || !b) return false;
     if (a === b) return true;
-    if (a.length >= 3 && b.length >= 3 && Math.abs(a.length - b.length) <= 1 && (a.includes(b) || b.includes(a))) return true;
+    if (a.length >= 2 && b.length >= 2 && (a.includes(b) || b.includes(a))) return true;
     const dist = levenshtein(a, b);
     const maxLen = Math.max(a.length, b.length);
-    return dist / maxLen <= 0.32;
+    return dist / maxLen <= 0.45;
   }
 
   // ---------- darhol ochish ----------
@@ -495,11 +494,7 @@
       let finalChunk = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          const res = event.results[i][0];
-          // Ba'zi brauzerlar tinch/shovqinli paytda past ishonchli (hallucination)
-          // natija qaytaradi — bunday holatlarni o'tkazib yuboramiz.
-          if (typeof res.confidence === 'number' && res.confidence > 0 && res.confidence < 0.3) continue;
-          finalChunk += ' ' + res.transcript;
+          finalChunk += ' ' + event.results[i][0].transcript;
         }
       }
       if (finalChunk.trim()) {
