@@ -46,6 +46,7 @@
       pointer = 0;
       revealedCount = 0;
       consecutiveMisses = 0;
+      clearWrongTimer();
     }
     renderWords();
     visLabel.textContent = mode === 'visible' ? 'Berkitish' : "Ko'rsatish";
@@ -297,6 +298,27 @@
     }
   }
 
+  // "Xato" belgisi endi NECHTA marta mos kelmaganiga emas, balki QANCHA
+  // VAQT o'tganiga qarab chiqadi: joriy so'z 6 soniya davomida
+  // tasdiqlanmasa, o'shandagina qizil bo'ladi. Bu tabiiy pauzalar yoki
+  // STT kechikishi tufayli erta xato chiqib ketishining oldini oladi.
+  const WRONG_DELAY_MS = 6000;
+  let wrongTimer = null;
+  let wrongTimerPointer = -1;
+  function scheduleWrongCheck() {
+    if (wrongTimer && wrongTimerPointer === pointer) return; // shu so'z uchun allaqachon kutilmoqda
+    clearWrongTimer();
+    wrongTimerPointer = pointer;
+    wrongTimer = setTimeout(() => {
+      wrongTimer = null;
+      if (pointer === wrongTimerPointer) flashWrong();
+    }, WRONG_DELAY_MS);
+  }
+  function clearWrongTimer() {
+    if (wrongTimer) { clearTimeout(wrongTimer); wrongTimer = null; }
+    wrongTimerPointer = -1;
+  }
+
   function tryAdvance(transcriptWords) {
     const startPointer = pointer;
     let ti = 0;
@@ -350,17 +372,16 @@
           const nextSpan = textEl.querySelector(`.word[data-i="${Math.min(pointer, expectedWords.length - 1)}"]`);
           if (nextSpan) nextSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
           consecutiveMisses = 0;
+          clearWrongTimer();
         } else {
-          flashWrong();
+          scheduleWrongCheck();
         }
       } else {
-        // Bitta-ikkita tasodifiy kechikish (STT birozgina orqada qolishi)
-        // uchun darhol xato ko'rsatmaymiz — ketma-ket 3-marta mos
-        // kelmasagina xato belgisi chiqadi.
-        if (consecutiveMisses >= 3) flashWrong();
+        scheduleWrongCheck();
       }
     } else {
       consecutiveMisses = 0;
+      clearWrongTimer();
     }
   }
   let consecutiveMisses = 0;
@@ -504,20 +525,8 @@
     };
 
     recognition.onend = () => {
-      if (!listening) return;
-      const elapsed = Date.now() - listenStartedAt;
-      if (elapsed < 2500) {
-        // Juda tez tugagan — texnik uzilish (masalan tarmoq/OS), sezilmasdan
-        // qayta ulanamiz.
-        try { recognition.start(); listenStartedAt = Date.now(); } catch (e) { /* already running */ }
-      } else {
-        // Android ba'zi qurilmalarda uzoq tinglashni o'zi to'xtatib, har safar
-        // qayta ishga tushirilganda tizim ovozini ("tiling-tilang") chiqaradi.
-        // Shuning uchun uzoq sessiyalarda avtomatik qayta boshlamaymiz —
-        // mikrofonni yana bir marta bosish kifoya.
-        listening = false;
-        micBtn.classList.remove('listening');
-        statusEl.textContent = 'Davom etish uchun mikrofonni qayta bosing';
+      if (listening) {
+        try { recognition.start(); } catch (e) { /* already running */ }
       }
     };
   }
@@ -528,15 +537,14 @@
     if (!audio.paused) { audio.pause(); playBtn.innerHTML = playIcon(); } // ovoz mikrofonga xalaqit bermasin
     if (mode !== 'practice' || pointer >= expectedWords.length) setMode('practice');
     listening = true;
-    listenStartedAt = Date.now();
     micBtn.classList.add('listening');
     statusEl.textContent = 'Tinglayapman... yodingizdan ayting';
     try { recognition.start(); } catch (e) { /* already running */ }
   }
-  let listenStartedAt = 0;
 
   function stopListening() {
     listening = false;
+    clearWrongTimer();
     micBtn.classList.remove('listening');
     statusEl.textContent = 'Boshlash uchun mikrofonni bosing';
     if (recognition) {
