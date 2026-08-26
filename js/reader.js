@@ -302,7 +302,7 @@
   // VAQT o'tganiga qarab chiqadi: joriy so'z 6 soniya davomida
   // tasdiqlanmasa, o'shandagina qizil bo'ladi. Bu tabiiy pauzalar yoki
   // STT kechikishi tufayli erta xato chiqib ketishining oldini oladi.
-  const WRONG_DELAY_MS = 6000;
+  const WRONG_DELAY_MS = 5000;
   let wrongTimer = null;
   let wrongTimerPointer = -1;
   function scheduleWrongCheck() {
