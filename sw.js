@@ -1,5 +1,5 @@
 // Bump this on every deploy so phones pick up fresh code.
-const CACHE_VERSION = 'tanass-v17';
+const CACHE_VERSION = 'tanass-v18';
 
 const CORE_ASSETS = [
   '/index.html',
@@ -61,18 +61,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate: sahifa DARHOL keshdan ko'rsatiladi (tez!),
-  // orqa fonda esa yangi versiya yuklab, keyingi safar uchun yangilanadi.
+  // Network-first: HAR DOIM avval tarmoqdan eng yangi versiyani so'raydi
+  // (shu bilan telefonlarda "eski kod ishlab turibdi" muammosi butunlay
+  // bartaraf etiladi). Faqat internet bo'lmasa keshga qaytadi.
   event.respondWith(
-    caches.open(CACHE_VERSION).then(async (cache) => {
-      const cached = await cache.match(event.request);
-      const networkFetch = fetch(event.request)
-        .then((response) => {
-          cache.put(event.request, response.clone());
-          return response;
-        })
-        .catch(() => cached);
-      return cached || networkFetch;
-    })
+    fetch(event.request)
+      .then((response) => {
+        const clone = response.clone();
+        caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });

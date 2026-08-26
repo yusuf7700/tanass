@@ -354,7 +354,10 @@
           flashWrong();
         }
       } else {
-        flashWrong();
+        // Bitta tasodifiy kechikish (STT birozgina orqada qolishi) uchun
+        // darhol xato ko'rsatmaymiz — ketma-ket 2-marta mos kelmasagina
+        // xato belgisi chiqadi.
+        if (consecutiveMisses >= 2) flashWrong();
       }
     } else {
       consecutiveMisses = 0;
